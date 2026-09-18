@@ -83,7 +83,7 @@ export default function EmergencyContacts() {
             <div className="flex flex-col items-center justify-center gap-2 py-8">
               <span className="text-3xl opacity-30">👤</span>
               <p className="text-slate-600 text-xs">No emergency contacts yet</p>
-              <Button size="xs" variant="outline" onClick={() => setShowAdd(true)}>
+              <Button size="sm" variant="outline" onClick={() => setShowAdd(true)}>
                 Add First Contact
               </Button>
             </div>
@@ -106,7 +106,7 @@ export default function EmergencyContacts() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold text-white truncate">{c.name}</p>
-                  {c.isPrimary && <Badge variant="safe" size="xs">Primary</Badge>}
+                  {c.isPrimary && <Badge variant="safe" size="sm">Primary</Badge>}
                 </div>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                   <p className="text-xs text-slate-500">{c.phone}</p>
@@ -149,7 +149,6 @@ export default function EmergencyContacts() {
         isOpen={showAdd}
         onClose={() => setShowAdd(false)}
         title="Add Emergency Contact"
-        subtitle="Will receive an email automatically if you trigger SOS"
       >
         <div className="space-y-4">
           {([

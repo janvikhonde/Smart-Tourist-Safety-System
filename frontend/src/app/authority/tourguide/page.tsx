@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect} from 'react'
 import { useRouter } from 'next/navigation'
 import { clearAuth, getUser } from '@/lib/auth'
 import { tourGuidePlacesStore, TourGuidePlace, CAT_COLOR, SEASON_COLOR, DIFF_COLOR } from '@/lib/tourGuideStore'
@@ -9,11 +9,17 @@ const CATEGORIES = ['Beach', 'Mountain', 'City', 'Forest', 'Desert', 'Cultural',
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'AUD']
 const DIFFICULTIES = ['Easy', 'Moderate', 'Challenging', 'Expert']
 const TRANSPORT_OPTIONS = ['Flight', 'Flight + Train', 'Flight + Ferry', 'Flight + Bus', 'Train', 'Bus', 'Car', 'Multiple Modes']
-
 const STATUS_STYLE: Record<string, any> = {
-  Active:   { bg: 'rgba(34,197,94,0.1)',   color: '#4ade80', border: 'rgba(34,197,94,0.2)' },
-  Draft:    { bg: 'rgba(251,191,36,0.1)',  color: '#fbbf24', border: 'rgba(251,191,36,0.2)' },
-  Archived: { bg: 'rgba(100,116,139,0.1)', color: '#94a3b8', border: 'rgba(100,116,139,0.2)' },
+  Active: {
+    bg: 'rgba(34,197,94,0.1)',
+    color: '#4ade80',
+    border: 'rgba(34,197,94,0.2)'
+  },
+  Inactive: {
+    bg: 'rgba(100,116,139,0.1)',
+    color: '#94a3b8',
+    border: 'rgba(100,116,139,0.2)'
+  },
 }
 
 const NAV_ITEMS = [
@@ -47,7 +53,7 @@ export default function TourGuidePage() {
   const [places,       setPlaces]       = useState<TourGuidePlace[]>([])
   const [selectedPlace,setSelectedPlace]= useState<TourGuidePlace | null>(null)
   const [editPlace,    setEditPlace]    = useState<TourGuidePlace | null>(null)
-  const [deleteConfirm,setDeleteConfirm]= useState<number | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [filterCat,    setFilterCat]    = useState('All')
   const [filterSeason, setFilterSeason] = useState('All')
   const [filterStatus, setFilterStatus] = useState('All')
@@ -63,12 +69,12 @@ export default function TourGuidePage() {
     name: '', location: '', country: '', category: 'Beach', season: 'Summer',
     budget: '', currency: 'USD', days: '', transport: 'Flight',
     difficulty: 'Easy', image: '', description: '', tips: '', highlights: '',
-    lat: '', lng: '', status: 'Active' as 'Active' | 'Draft' | 'Archived',
+    lat: '', lng: '', status: 'Active' as 'Active'  | 'Archived',
   })
 
   // Subscribe to shared store
   useEffect(() => {
-    setPlaces(tourGuidePlacesStore.getPlaces())
+    setPlaces(tourGuidePlacesStore.getAllPlaces())
     const unsub = tourGuidePlacesStore.subscribe(setPlaces)
     return unsub
   }, [])
@@ -101,22 +107,24 @@ export default function TourGuidePage() {
       ...form,
       lat: parseFloat(form.lat) || 0,
       lng: parseFloat(form.lng) || 0,
+      rating: '0',
+status: form.status === 'Active' ? 'Active' : 'Inactive',
     })
     setForm({ name:'', location:'', country:'', category:'Beach', season:'Summer', budget:'', currency:'USD', days:'', transport:'Flight', difficulty:'Easy', image:'', description:'', tips:'', highlights:'', lat:'', lng:'', status:'Active' })
     setFormErrors({})
     setActiveFormTab('basic')
-    showToast(`✅ "${p.name}" added as ${p.placeId} — visible to tourists!`)
+    showToast(`✅ "${p.name}" added successfully — visible to tourists!`)
     setActiveNav('places')
   }
 
-  const deletePlace = (id: number) => {
-    const p = places.find(x => x.id === id)
-    tourGuidePlacesStore.deletePlace(id)
-    setDeleteConfirm(null)
-    if (selectedPlace?.id === id) setSelectedPlace(null)
-    showToast(`🗑️ "${p?.name}" removed`, 'error')
-  }
-
+  const deletePlace = (id: string) => {
+  const p = places.find(x => x.id === id)
+  tourGuidePlacesStore.deletePlace(id, 'guide')
+  setDeleteConfirm(null)
+  if (selectedPlace?.id === id) setSelectedPlace(null)
+  showToast(`🗑️ "${p?.name}" removed`, 'error')
+}
+  
   const saveEdit = () => {
     if (!editPlace) return
     tourGuidePlacesStore.updatePlace(editPlace.id, editPlace)
@@ -135,14 +143,14 @@ export default function TourGuidePage() {
     (filterStatus === 'All' || p.status   === filterStatus) &&
     (p.name.toLowerCase().includes(search.toLowerCase()) ||
      p.country.toLowerCase().includes(search.toLowerCase()) ||
-     p.placeId.toLowerCase().includes(search.toLowerCase()))
+     p.id.toLowerCase().includes(search.toLowerCase()))
   )
 
   const stats = {
     total:  places.length,
     active: places.filter(p => p.status === 'Active').length,
-    draft:  places.filter(p => p.status === 'Draft').length,
-    views:  places.reduce((s, p) => s + p.visitors, 0),
+    inactive:  places.filter(p => p.status === 'Inactive').length,
+    views:  places.reduce((s, p) => s + (p.visitors ?? 0), 0),
   }
 
   return (
@@ -288,7 +296,7 @@ export default function TourGuidePage() {
                 {[
                   { label:'Total Destinations', value:stats.total,                icon:'📍', accent:'#a78bfa' },
                   { label:'Active (visible)',    value:stats.active,               icon:'✅', accent:'#4ade80' },
-                  { label:'Draft / Pending',     value:stats.draft,                icon:'📝', accent:'#fbbf24' },
+                  { label:'Inactive',     value:stats.inactive,                icon:'📝', accent:'#fbbf24' },
                   { label:'Total Views',         value:stats.views.toLocaleString(),icon:'👁️', accent:'#60a5fa' },
                 ].map((s, i) => (
                   <div key={i} className="stat-card" style={{ borderColor:s.accent+'33' }}>
@@ -317,7 +325,7 @@ export default function TourGuidePage() {
                   </div>
                   {places.slice(0, 6).map(p => (
                     <div key={p.id} className="tbl-row" style={{ gridTemplateColumns:'100px 1fr 100px 90px 110px', cursor:'pointer' }} onClick={() => setSelectedPlace(p)}>
-                      <span style={{ color:'#3b82f6', fontFamily:'DM Mono, monospace', fontSize:11.5 }}>{p.placeId}</span>
+                      <span style={{ color:'#3b82f6', fontFamily:'DM Mono, monospace', fontSize:11.5 }}>{p.id}</span>
                       <div style={{ display:'flex', alignItems:'center', gap:9 }}>
                         <img src={p.image} alt="" style={{ width:28, height:28, borderRadius:6, objectFit:'cover', flexShrink:0 }} onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
                         <div>
@@ -401,7 +409,7 @@ export default function TourGuidePage() {
                   </div>
                 ) : filteredPlaces.map(p => (
                   <div key={p.id} className="tbl-row" style={{ gridTemplateColumns:'108px 1.6fr 100px 100px 90px 88px 108px 148px' }}>
-                    <span style={{ color:'#3b82f6', fontFamily:'DM Mono, monospace', fontSize:11.5 }}>{p.placeId}</span>
+                    <span style={{ color:'#3b82f6', fontFamily:'DM Mono, monospace', fontSize:11.5 }}>{p.id}</span>
                     <div style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }} onClick={() => setSelectedPlace(p)}>
                       <img src={p.image} alt="" style={{ width:34, height:34, borderRadius:7, objectFit:'cover', flexShrink:0 }} onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
                       <div>
@@ -679,7 +687,7 @@ export default function TourGuidePage() {
                 </div>
                 {places.map(p => (
                   <div key={p.id} className="tbl-row" style={{ gridTemplateColumns:'108px 1fr 110px 80px 1fr 150px' }}>
-                    <span style={{ color:'#3b82f6', fontFamily:'DM Mono, monospace', fontSize:11.5 }}>{p.placeId}</span>
+                    <span style={{ color:'#3b82f6', fontFamily:'DM Mono, monospace', fontSize:11.5 }}>{p.id}</span>
                     <div style={{ display:'flex', alignItems:'center', gap:9 }}>
                       <img src={p.image} alt="" style={{ width:30, height:30, borderRadius:6, objectFit:'cover' }} onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
                       <div>
@@ -717,7 +725,7 @@ export default function TourGuidePage() {
                   <span className="badge" style={{ background:STATUS_STYLE[selectedPlace.status].bg, color:STATUS_STYLE[selectedPlace.status].color, border:`1px solid ${STATUS_STYLE[selectedPlace.status].border}` }}>● {selectedPlace.status}</span>
                 </div>
                 <h2 style={{ fontSize:20, fontWeight:700, color:'#fff' }}>{selectedPlace.name}</h2>
-                <p style={{ color:'rgba(255,255,255,0.5)', fontSize:12.5 }}>📍 {selectedPlace.location}, {selectedPlace.country} · {selectedPlace.placeId} · ⭐ {selectedPlace.rating}</p>
+                <p style={{ color:'rgba(255,255,255,0.5)', fontSize:12.5 }}>📍 {selectedPlace.location}, {selectedPlace.country} · {selectedPlace.id} · ⭐ {selectedPlace.rating}</p>
               </div>
             </div>
             <div style={{ padding:22 }}>
@@ -729,7 +737,8 @@ export default function TourGuidePage() {
                   { l:'Transport', v:selectedPlace.transport },
                   { l:'Difficulty',v:selectedPlace.difficulty, color:DIFF_COLOR[selectedPlace.difficulty] },
                   { l:'Best Season',v:selectedPlace.season },
-                  { l:'Total Views',v:selectedPlace.visitors.toLocaleString() },
+                  { l:'Total Views',
+v: (selectedPlace.visitors ?? 0).toLocaleString() },
                 ].map((d, i) => (
                   <div key={i} style={{ padding:'10px 12px', background:'rgba(255,255,255,0.02)', border:'1px solid #0e1e30', borderRadius:8 }}>
                     <p style={{ fontSize:10, color:'#1e4060', fontWeight:700, letterSpacing:'0.6px', marginBottom:4 }}>{d.l.toUpperCase()}</p>
@@ -771,7 +780,7 @@ export default function TourGuidePage() {
             <div style={{ padding:'16px 22px', borderBottom:'1px solid #0e1e30', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div>
                 <h3 style={{ fontSize:15, fontWeight:700, color:'#ddeaf5' }}>Edit — {editPlace.name}</h3>
-                <p style={{ fontSize:11, color:'#1e4060', marginTop:2 }}>{editPlace.placeId}</p>
+                <p style={{ fontSize:11, color:'#1e4060', marginTop:2 }}>{editPlace.id}</p>
               </div>
               <button onClick={() => setEditPlace(null)} style={{ background:'rgba(255,255,255,0.03)', border:'1px solid #182e48', color:'#4a6a8a', borderRadius:7, width:28, height:28, cursor:'pointer', fontSize:16 }}>×</button>
             </div>
@@ -783,7 +792,7 @@ export default function TourGuidePage() {
                     <input type={f.t || 'text'} value={(editPlace as any)[f.k]} onChange={e => setEditPlace({ ...editPlace, [f.k]: e.target.value })} className="input-f" />
                   </div>
                 ))}
-                {[{ k:'category', l:'Category', opts:CATEGORIES }, { k:'season', l:'Season', opts:SEASONS }, { k:'difficulty', l:'Difficulty', opts:DIFFICULTIES }, { k:'status', l:'Status', opts:['Active','Draft','Archived'] }].map(f => (
+                {[{ k:'category', l:'Category', opts:CATEGORIES }, { k:'season', l:'Season', opts:SEASONS }, { k:'difficulty', l:'Difficulty', opts:DIFFICULTIES }, { k:'status', l:'Status', opts:['Active','Archived'] }].map(f => (
                   <div key={f.k}>
                     <label className="lbl">{f.l}</label>
                     <select value={(editPlace as any)[f.k]} onChange={e => setEditPlace({ ...editPlace, [f.k]: e.target.value })} className="input-f">

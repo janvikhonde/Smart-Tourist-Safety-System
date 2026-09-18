@@ -56,8 +56,10 @@ function statusBadge(status: Alert['status']): 'danger' | 'warn' | 'safe' | 'def
 }
 
 export default function AlertsList() {
-  const { alerts, resolve } = useAlerts()
-  const display = alerts.length > 0 ? alerts : MOCK_ALERTS
+  const hook = useAlerts() as ReturnType<typeof useAlerts> & { resolve?: (id: any) => void }
+const alerts = hook.alerts
+const resolve = (id: any) => hook.resolve?.(id)
+  const display: any[] = alerts.length > 0 ? alerts : MOCK_ALERTS
   const activeCount = display.filter(a => a.status === 'ACTIVE').length
 
   return (
@@ -103,7 +105,7 @@ export default function AlertsList() {
                 className="group px-6 py-4 flex items-start gap-4 border-b border-white/[0.04] hover:bg-white/[0.03] transition-all duration-200">
                 <div className="w-1 rounded-full self-stretch"
                   style={{ background: pc ? pc.border.replace('/30', '') : '#64748b' }} />
-                <div className="text-xl mt-1">{alertTypeIcon(alert.type)}</div>
+                <div className="text-xl mt-1">{alertTypeIcon(alert.type as any)}</div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="text-sm font-semibold text-white">{alert.title}</h3>

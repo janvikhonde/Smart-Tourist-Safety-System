@@ -115,6 +115,7 @@ export interface EmergencyContact {
   phone: string
   relation: string
   isPrimary: boolean
+  email?: string 
 }
 
 // ─── Weather ─────────────────────────────────────────────────────────────────

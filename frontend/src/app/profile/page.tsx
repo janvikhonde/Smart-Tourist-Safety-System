@@ -305,7 +305,7 @@ function ProfileContent() {
 
     // Try to persist to backend first
     try {
-      await touristApi.updateMe?.(updates)
+      await (touristApi as any).updateMe?.(updates)
     } catch {
       // Backend update failed — that's okay, we persist locally
     }

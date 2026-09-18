@@ -23,6 +23,7 @@ export type TourGuidePlace = {
   lng: number
   status: 'Active' | 'Inactive'
   addedBy?: string
+   visitors?: number
 }
 
 export type UserRole = 'guide' | 'tourist';

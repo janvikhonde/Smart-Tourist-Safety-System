@@ -1,4 +1,5 @@
 'use client'
+/// <reference types="google.maps" />
 import { useEffect, useRef, useState } from 'react'
 
 const MAP_STYLES = [

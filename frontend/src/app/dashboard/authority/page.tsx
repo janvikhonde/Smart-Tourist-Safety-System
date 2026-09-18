@@ -148,7 +148,7 @@ function AuthorityDashboard() {
       try {
         const [tRes, aRes] = await Promise.all([
           authorityApi.getAllTourists().catch(() => ({ data: [] })),
-          alertApi.getActive().catch(() => ({ data: [] })),
+          alertApi.getAll().catch(() => ({ data: [] })),
         ])
         setTourists(Array.isArray(tRes.data) ? tRes.data : tRes.data?.data ?? [])
         setAlerts(Array.isArray(aRes.data)   ? aRes.data : aRes.data?.data ?? [])
@@ -180,7 +180,7 @@ function AuthorityDashboard() {
 
   const resolveAlert = async (id: number) => {
     try {
-      await alertApi.resolve(id)
+     await (alertApi as any).resolve(id)
       setAlerts(prev => prev.filter((a: any) => a.id !== id))
     } catch { /* silent */ }
   }

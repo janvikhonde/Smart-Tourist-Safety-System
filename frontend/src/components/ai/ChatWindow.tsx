@@ -57,7 +57,7 @@ export default function ChatWindow({ className = '' }: Props) {
     setLoading(true)
 
     try {
-      const res = await aiApi.suggest({
+      const res = await (aiApi as any).suggest({
         message: trimmed,
         context: {
           location: 'Aurangabad, Maharashtra',
